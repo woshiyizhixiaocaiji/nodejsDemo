@@ -11,7 +11,7 @@ app.get('/', function (req, res, next) {
 });
 
 app.get('/view', function (req, res, next) {
-  var filename = req.query.filename;
+  var filename = req.query.filename; 
   res.sendfile('./views/' + filename);
 });
 
