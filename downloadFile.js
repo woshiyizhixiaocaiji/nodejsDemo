@@ -6,22 +6,50 @@ var app = express();
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
 
+var checked = false;
+
 app.get('/', function (req, res, next) {
   res.sendfile('./views/index.html');
 });
 
+app.post('/checkPassword', function (req, res, next) {
+  fs.readFile("./config/config.properties", "UTF-8", function (err, data) {
+    var password = data.split("=")[1];
+    if (req.body.user == password) {
+      checked = true;
+      res.sendfile('./views/root.html');
+    } else {
+      res.writeHead(200, { 'content-type': 'text/plain;charset=utf-8' });
+      res.write("密码错误！！！");
+      res.end();
+    }
+  });
+});
+
 app.get('/view', function (req, res, next) {
-  var filename = req.query.filename; 
+  if (!checked) {
+    res.sendfile('./views/index.html');
+    return;
+  }
+  var filename = req.query.filename;
   res.sendfile('./views/' + filename);
 });
 
 app.get('/video', function (req, res, next) {
+  if (!checked) {
+    res.sendfile('./views/index.html');
+    return;
+  }
   var filePath = req.query.filePath;
   res.sendfile(filePath);
 });
 
 
 app.get('/getRootFile', function (req, res, next) {
+  if (!checked) {
+    res.sendfile('./views/index.html');
+    return;
+  }
   var path = req.query.value;
   var index = path.indexOf('./root');
   if (index < 0) return;
@@ -34,6 +62,10 @@ app.get('/getRootFile', function (req, res, next) {
 });
 
 app.post('/upload', function (req, res) {
+  if (!checked) {
+    res.sendfile('./views/index.html');
+    return;
+  }
   //生成multiparty对象，并配置上传目标路径
   var form = new multiparty.Form();
   //设置编辑
@@ -64,6 +96,10 @@ app.post('/upload', function (req, res) {
 });
 
 app.post('/download', function (req, res) {
+  if (!checked) {
+    res.sendfile('./views/index.html');
+    return;
+  }
   var path = decodeURI(req.body.path);
   try {
     fs.stat(path, function (err, stat) {
