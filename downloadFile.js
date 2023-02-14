@@ -5,26 +5,74 @@ var fs = require("fs");
 var app = express();
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
-
+var mysql = require('mysql');
+var connection = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: 'root',
+  database: 'nodejsDemo'
+});
+connection.connect();
 var checked = false;
 
 app.get('/', function (req, res, next) {
   res.sendfile('./views/index.html');
 });
 
-app.post('/checkPassword', function (req, res, next) {
-  fs.readFile("./config/config.properties", "UTF-8", function (err, data) {
-    var password = data.split("=")[1];
-    if (req.body.user == password) {
+app.post('/signin', function (req, res, next) {
+  connection.query("SELECT * FROM user WHERE username = '" + req.body.username + "' AND password = '" + req.body.password + "'", function (err, result) {
+    if (err) {
+      console.log('[SELECT ERROR] - ', err.message);
+      return;
+    }
+    if (result.length <= 0) {
+      res.writeHead(200, { 'content-type': 'text/plain;charset=utf-8' });
+      res.write("账号或密码错误！！！");
+      res.end();
+    } else {
       checked = true;
       res.sendfile('./views/root.html');
-    } else {
-      res.writeHead(200, { 'content-type': 'text/plain;charset=utf-8' });
-      res.write("密码错误！！！");
-      res.end();
     }
   });
+
+
 });
+
+app.post('/register', function (req, res, next) {
+  connection.query("SELECT * FROM user WHERE username = '" + req.body.username + "'", function (err, result) {
+    if (err) {
+      console.log('[SELECT ERROR] - ', err.message);
+      return;
+    }
+    if (result.length > 0) {
+      res.writeHead(200, { 'content-type': 'text/plain;charset=utf-8' });
+      res.write("username重复！！！");
+      res.end();
+    } else {
+      var addSql = 'INSERT INTO user(username,password) VALUES(?,?)';
+      var addSqlParams = [req.body.username, req.body.password];
+      connection.query(addSql, addSqlParams, function (err, result) {
+        if (err) {
+          console.log('[INSERT ERROR] - ', err.message);
+          res.sendfile('./views/index.html');
+          return;
+        }
+        checked = true;
+        console.log('--------------------------INSERT----------------------------');
+        //console.log('INSERT ID:',result.insertId);        
+        console.log('INSERT ID:', result);
+        console.log('-----------------------------------------------------------------\n\n');
+        res.sendfile('./views/root.html');
+      });
+    }
+    console.log('--------------------------SELECT----------------------------');
+    console.log(result);
+    console.log('------------------------------------------------------------\n\n');
+  });
+
+
+});
+
 
 app.get('/view', function (req, res, next) {
   if (!checked) {
@@ -60,6 +108,25 @@ app.get('/getRootFile', function (req, res, next) {
     res.end();
   });
 });
+
+app.post('/makeDir', function (req, res, next) {
+  if (!checked) {
+    res.sendfile('./views/index.html');
+    return;
+  }
+  var path = req.body.filepath;
+  var index = path.indexOf('./root');
+  if (index < 0) return;
+  fs.mkdir(path, { recursive: true }, (err) => {
+    if (err) console.log(err);
+    else {
+      res.writeHead(200, { 'content-type': 'text/plain;charset=utf-8' });
+      res.write("创建文件夹成功！！！");
+      res.end();
+    };
+  });
+});
+
 
 app.post('/upload', function (req, res) {
   if (!checked) {

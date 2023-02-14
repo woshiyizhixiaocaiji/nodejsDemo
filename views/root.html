@@ -10,17 +10,50 @@
     <button type="button" onclick="showDate()">点我显示日期和时间</button>
     <button type="button" onclick="showFiles()">列举根目录文件列表</button>
     <button type="button" onclick="uploadFile()">上传文件</button>
+    <button type="button" onclick="makeDir()">创建文件夹</button>
     <h3 id="before"></h3>
     <h3 id="current"></h3>
     <div id="process"></div>
     <div id="output"></div>
 
     <script>
+
+        $(document).ready(function(){
+            $("#current").html("<a id ='currentPath' value = './root'>当前目录：./root</a>");
+
+        });
+
+        function makeDir() {
+            var filePath = $("#currentPath").attr("value");
+
+            if (filePath == undefined) {
+                filePath = "./root";
+            }
+            $("#process").empty();
+            $("#output").empty();
+            $("#before").empty();
+            $("#output").append("输入文件夹名：<input type='text' id='f1'/>");
+            $("#output").append("<button id=makeDir>创建文件夹</button>");
+            $("#makeDir").on("click", function (event) {
+                var xhr = new XMLHttpRequest();
+                var dirName = document.getElementById('f1').value;  //f1是input type="file" 的那个标签
+                xhr.open("POST", "makeDir", true);
+                xhr.onreadystatechange = function () {
+                    if (this.readyState == 4 && this.status == 200) {
+                        console.log("创建文件夹成功");
+                        showFiles(filePath + "/" + dirName);
+                    }
+                }
+                xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                var path = filePath + "/" + dirName;
+                xhr.send("filepath="+path);
+            });
+        }
         function uploadFile() {
             var filePath = $("#currentPath").attr("value");
 
             if (filePath == undefined) {
-                filePath = "./";
+                filePath = "./root";
             }
             $("#process").empty();
             $("#output").empty();
@@ -72,7 +105,7 @@
                 // if (ext == ".mp4" || ext == ".mp3") {
                 //     downLoadFile(pathname);
                 if (pathname.lastIndexOf('.') > 0) {
-                    window.open(window.location.href + "video?filePath=" + pathname);
+                    window.open("/video?filePath=" + pathname);
                 } else {
                     downLoadFile(pathname)
                 }
@@ -90,14 +123,7 @@
                 if (pathname == undefined) {
                     return;
                 }
-                // var ext = pathname.match(/(\.[^.]+|)$/)[0];//取得后缀名
-                // if (ext == ".mp4" || ext == ".mp3") {
-                //     downLoadFile(pathname);
-                //     //window.open(window.location.href + "video?filePath=" + pathname);
-                // }else{
                 downLoadFile(pathname);
-                //}
-
             });
         }
 
@@ -133,10 +159,6 @@
                     }
                 }
             }
-            // httpRequest.responseType = 'blob';
-            // httpRequest.open("GET", "download?value=" + filename, true);
-            // httpRequest.send();
-
             httpRequest.responseType = 'blob';
             httpRequest.open("POST", "download", true);
             httpRequest.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
